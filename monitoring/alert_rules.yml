@@ -1,0 +1,271 @@
+groups:
+# ========================================
+# CREDIYA HU10 - ALERTAS COMPLETAS
+# ========================================
+
+- name: crediya_critical_alerts
+  rules:
+  # ========================================
+  # ALERTAS CRÍTICAS - SERVICIOS CAÍDOS
+  # ========================================
+  
+  - alert: AuthenticationServiceDown
+    expr: up{job="authentication-service"} == 0
+    for: 30s
+    labels:
+      severity: critical
+      service: authentication
+      team: backend
+    annotations:
+      summary: " CRÍTICO: Servicio de Autenticación CAÍDO"
+      description: "El servicio de autenticación {{ $labels.instance }} está CAÍDO por más de 30 segundos. Los usuarios no pueden hacer login."
+      runbook_url: "https://crediya.com/runbooks/auth-service-down"
+
+  - alert: SolicitudesServiceDown
+    expr: up{job="solicitudes-service"} == 0
+    for: 30s
+    labels:
+      severity: critical
+      service: solicitudes
+      team: backend
+    annotations:
+      summary: " CRÍTICO: Servicio de Solicitudes CAÍDO"
+      description: "El servicio de solicitudes {{ $labels.instance }} está CAÍDO por más de 30 segundos. No se pueden procesar nuevas solicitudes."
+      runbook_url: "https://crediya.com/runbooks/solicitudes-service-down"
+
+  - alert: ReportesServiceDown
+    expr: up{job="reportes-service"} == 0
+    for: 30s
+    labels:
+      severity: critical
+      service: reportes
+      team: backend
+    annotations:
+      summary: " CRÍTICO: Servicio de Reportes CAÍDO"
+      description: "El servicio de reportes {{ $labels.instance }} está CAÍDO por más de 30 segundos. Los dashboards no se actualizan."
+      runbook_url: "https://crediya.com/runbooks/reportes-service-down"
+
+  - alert: LoadBalancerDown
+    expr: up{job="nginx-load-balancer"} == 0
+    for: 15s
+    labels:
+      severity: critical
+      service: load-balancer
+      team: infrastructure
+    annotations:
+      summary: " CRÍTICO: Load Balancer CAÍDO"
+      description: "El Load Balancer {{ $labels.instance }} está CAÍDO. Todo el tráfico está interrumpido."
+      runbook_url: "https://crediya.com/runbooks/load-balancer-down"
+
+  - alert: DatabaseDown
+    expr: up{job=~"postgres-.*"} == 0
+    for: 1m
+    labels:
+      severity: critical
+      service: database
+      team: infrastructure
+    annotations:
+      summary: " CRÍTICO: Base de Datos CAÍDA"
+      description: "La base de datos {{ $labels.job }} en {{ $labels.instance }} está CAÍDA por más de 1 minuto."
+      runbook_url: "https://crediya.com/runbooks/database-down"
+
+# ========================================
+# ALERTAS DE RENDIMIENTO - WARNING
+# ========================================
+
+- name: crediya_performance_alerts
+  rules:
+  
+  - alert: HighCPUUsage
+    expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+    for: 3m
+    labels:
+      severity: warning
+      service: system
+      team: infrastructure
+    annotations:
+      summary: " CPU Alto en {{ $labels.instance }}"
+      description: "Uso de CPU es {{ $value }}% en {{ $labels.instance }} por más de 3 minutos."
+      runbook_url: "https://crediya.com/runbooks/high-cpu"
+
+  - alert: HighMemoryUsage
+    expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+    for: 3m
+    labels:
+      severity: warning
+      service: system
+      team: infrastructure
+    annotations:
+      summary: " Memoria Alta en {{ $labels.instance }}"
+      description: "Uso de memoria es {{ $value }}% en {{ $labels.instance }} por más de 3 minutos."
+      runbook_url: "https://crediya.com/runbooks/high-memory"
+
+  - alert: HighDiskUsage
+    expr: (node_filesystem_size_bytes{fstype!="tmpfs"} - node_filesystem_free_bytes{fstype!="tmpfs"}) / node_filesystem_size_bytes{fstype!="tmpfs"} * 100 > 85
+    for: 5m
+    labels:
+      severity: warning
+      service: system
+      team: infrastructure
+    annotations:
+      summary: " Disco Lleno en {{ $labels.instance }}"
+      description: "Uso de disco es {{ $value }}% en {{ $labels.mountpoint }} de {{ $labels.instance }}."
+      runbook_url: "https://crediya.com/runbooks/high-disk"
+
+# ========================================
+# ALERTAS DE APLICACIÓN - BUSINESS LOGIC
+# ========================================
+
+- name: crediya_application_alerts
+  rules:
+
+  - alert: HighErrorRate
+    expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) * 100 > 5
+    for: 2m
+    labels:
+      severity: warning
+      service: application
+      team: backend
+    annotations:
+      summary: " Alta Tasa de Errores en {{ $labels.service }}"
+      description: "Tasa de errores 5xx es {{ $value }}% en {{ $labels.service }} por más de 2 minutos."
+      runbook_url: "https://crediya.com/runbooks/high-error-rate"
+
+  - alert: SlowResponseTime
+    expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+    for: 3m
+    labels:
+      severity: warning
+      service: application
+      team: backend
+    annotations:
+      summary: " Respuestas Lentas en {{ $labels.service }}"
+      description: "95% de las respuestas toman más de 2 segundos en {{ $labels.service }}."
+      runbook_url: "https://crediya.com/runbooks/slow-response"
+
+  - alert: TooManyRequests
+    expr: rate(http_requests_total[1m]) > 1000
+    for: 2m
+    labels:
+      severity: warning
+      service: application
+      team: backend
+    annotations:
+      summary: " Muchas Solicitudes en {{ $labels.service }}"
+      description: "{{ $labels.service }} está recibiendo {{ $value }} requests/min, posible ataque DDoS."
+      runbook_url: "https://crediya.com/runbooks/too-many-requests"
+
+# ========================================
+# ALERTAS DE INFRAESTRUCTURA AWS
+# ========================================
+
+- name: crediya_infrastructure_alerts
+  rules:
+
+  - alert: LocalStackDown
+    expr: up{job="localstack"} == 0
+    for: 1m
+    labels:
+      severity: critical
+      service: localstack
+      team: infrastructure
+    annotations:
+      summary: " CRÍTICO: LocalStack (AWS) CAÍDO"
+      description: "LocalStack {{ $labels.instance }} está CAÍDO. Servicios AWS simulados no disponibles."
+      runbook_url: "https://crediya.com/runbooks/localstack-down"
+
+  - alert: MailHogDown
+    expr: up{job="mailhog"} == 0
+    for: 2m
+    labels:
+      severity: warning
+      service: mailhog
+      team: infrastructure
+    annotations:
+      summary: " MailHog CAÍDO"
+      description: "MailHog {{ $labels.instance }} está CAÍDO. No se pueden enviar emails de prueba."
+      runbook_url: "https://crediya.com/runbooks/mailhog-down"
+
+# ========================================
+# ALERTAS DE MONITOREO - META ALERTS
+# ========================================
+
+- name: crediya_monitoring_alerts
+  rules:
+
+  - alert: PrometheusDown
+    expr: up{job="prometheus"} == 0
+    for: 30s
+    labels:
+      severity: critical
+      service: monitoring
+      team: infrastructure
+    annotations:
+      summary: " CRÍTICO: Prometheus CAÍDO"
+      description: "Prometheus está CAÍDO. Se perdió la capacidad de monitoreo."
+      runbook_url: "https://crediya.com/runbooks/prometheus-down"
+
+  - alert: GrafanaDown
+    expr: up{job="grafana"} == 0
+    for: 1m
+    labels:
+      severity: warning
+      service: monitoring
+      team: infrastructure
+    annotations:
+      summary: " Grafana CAÍDO"
+      description: "Grafana está CAÍDO. Dashboards no disponibles."
+      runbook_url: "https://crediya.com/runbooks/grafana-down"
+
+  - alert: TooManyAlerts
+    expr: count(ALERTS{alertstate="firing"}) > 10
+    for: 1m
+    labels:
+      severity: warning
+      service: monitoring
+      team: infrastructure
+    annotations:
+      summary: " Demasiadas Alertas Activas"
+      description: "Hay {{ $value }} alertas activas. Posible problema sistémico."
+      runbook_url: "https://crediya.com/runbooks/too-many-alerts"
+
+# ========================================
+# ALERTAS DE NEGOCIO - BUSINESS METRICS
+# ========================================
+
+- name: crediya_business_alerts
+  rules:
+
+  - alert: NoNewLoans
+    expr: increase(crediya_loans_approved_total[1h]) == 0
+    for: 2h
+    labels:
+      severity: warning
+      service: business
+      team: product
+    annotations:
+      summary: " Sin Préstamos Nuevos"
+      description: "No se han aprobado préstamos en las últimas 2 horas."
+      runbook_url: "https://crediya.com/runbooks/no-new-loans"
+
+  - alert: HighRejectionRate
+    expr: rate(crediya_loans_rejected_total[1h]) / rate(crediya_loans_total[1h]) * 100 > 80
+    for: 30m
+    labels:
+      severity: warning
+      service: business
+      team: product
+    annotations:
+      summary: " Alta Tasa de Rechazo"
+      description: "Tasa de rechazo de préstamos es {{ $value }}% en la última hora."
+      runbook_url: "https://crediya.com/runbooks/high-rejection-rate"
+
+  # Alerta si hay muchos errores HTTP
+  - alert: HighErrorRate
+    expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "High error rate on {{ $labels.instance }}"
+      description: "Error rate is above 10% for more than 1 minute."

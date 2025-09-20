@@ -1,0 +1,28 @@
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Secrets (mantener estructura pero no contenido sensible)
+# secrets/*.json
+
+# Docker volumes
+volumes/
+data/
+
+# Backup files
+*.bak
+*.backup

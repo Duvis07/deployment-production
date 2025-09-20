@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  # ========================================
+  # MONITORING INFRASTRUCTURE ONLY (HU10)
+  # Conecta a microservicios ya existentes
+  # ========================================
+  
+  # Node Exporter (System Metrics)
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: crediya-node-exporter-hu10
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - crediya-network
+    restart: unless-stopped
+
+  # Prometheus (Simula CloudWatch Metrics)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: crediya-prometheus-hu10
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - crediya-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    restart: unless-stopped
+
+  # Grafana (Simula CloudWatch Dashboards)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: crediya-grafana-hu10
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - crediya-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+
+  # AlertManager (Simula CloudWatch Alarms)
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: crediya-alertmanager-hu10
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    networks:
+      - crediya-network
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+    restart: unless-stopped
+
+  # Nginx Load Balancer (Simula ELB) - Solo para HU10
+  nginx-load-balancer:
+    image: nginx:alpine
+    container_name: crediya-nginx-lb-hu10
+    ports:
+      - "8888:80"
+      - "8443:443"
+    volumes:
+      - ./nginx/load-balancer-monitoring.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - crediya-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# ========================================
+# NETWORKS - Usa la red existente
+# ========================================
+networks:
+  crediya-network:
+    external: true
+    name: crediya-network
+
+# ========================================
+# VOLUMES - Solo para monitoreo
+# ========================================
+volumes:
+  prometheus_data:
+    name: crediya_prometheus_hu10_data
+  grafana_data:
+    name: crediya_grafana_hu10_data
+  alertmanager_data:
+    name: crediya_alertmanager_hu10_data
