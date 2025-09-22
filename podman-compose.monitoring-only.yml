@@ -2,8 +2,7 @@ version: '3.8'
 
 services:
   # ========================================
-  # MONITORING INFRASTRUCTURE ONLY (HU10)
-  # Conecta a microservicios ya existentes
+  # MONITORING INFRASTRUCTURE
   # ========================================
   
   # Node Exporter (System Metrics)
@@ -84,7 +83,7 @@ services:
       - '--web.external-url=http://localhost:9093'
     restart: unless-stopped
 
-  # Nginx Load Balancer (Simula ELB) - Solo para HU10
+  # Nginx Load Balancer (Simula ELB)
   nginx-load-balancer:
     image: nginx:alpine
     container_name: crediya-nginx-lb-hu10
@@ -103,7 +102,7 @@ services:
       retries: 3
 
 # ========================================
-# NETWORKS - Usa la red existente
+# NETWORKS
 # ========================================
 networks:
   crediya-network:
