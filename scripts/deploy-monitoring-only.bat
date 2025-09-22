@@ -73,23 +73,23 @@ echo.
 echo Checking monitoring services...
 curl -s http://localhost:9090/-/healthy >nul 2>&1
 if %ERRORLEVEL% equ 0 (
-    echo ✅ Prometheus: HEALTHY
+    echo  Prometheus: HEALTHY
 ) else (
-    echo ❌ Prometheus: NOT READY
+    echo  Prometheus: NOT READY
 )
 
 curl -s http://localhost:3000 >nul 2>&1
 if %ERRORLEVEL% equ 0 (
-    echo ✅ Grafana: HEALTHY
+    echo  Grafana: HEALTHY
 ) else (
-    echo ❌ Grafana: NOT READY
+    echo  Grafana: NOT READY
 )
 
 curl -s http://localhost:9093 >nul 2>&1
 if %ERRORLEVEL% equ 0 (
-    echo ✅ AlertManager: HEALTHY
+    echo  AlertManager: HEALTHY
 ) else (
-    echo ❌ AlertManager: NOT READY
+    echo  AlertManager: NOT READY
 )
 
 echo.

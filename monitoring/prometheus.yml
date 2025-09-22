@@ -22,7 +22,7 @@ scrape_configs:
     static_configs:
       - targets: ['node-exporter:9100']
 
-  # Authentication Service (usando servicio existente)
+  # Authentication Service
   - job_name: 'authentication-service'
     metrics_path: '/actuator/prometheus'
     static_configs:
@@ -30,7 +30,7 @@ scrape_configs:
         - 'crediya-auth-service:8080'
     scrape_interval: 10s
 
-  # Solicitudes Service (usando servicio existente)
+  # Solicitudes Service
   - job_name: 'solicitudes-service'
     metrics_path: '/actuator/prometheus'
     static_configs:
@@ -38,7 +38,7 @@ scrape_configs:
         - 'crediya-solicitudes-service:8081'
     scrape_interval: 10s
 
-  # Reportes Service (usando servicio existente)
+  # Reportes Service
   - job_name: 'reportes-service'
     metrics_path: '/actuator/prometheus'
     static_configs:
@@ -53,7 +53,7 @@ scrape_configs:
     metrics_path: '/nginx_status'
     scrape_interval: 30s
 
-  # PostgreSQL Databases (usando servicios existentes)
+  # PostgreSQL Databases
   - job_name: 'postgres-auth'
     static_configs:
       - targets: ['crediya-postgres-auth:5432']
@@ -64,7 +64,7 @@ scrape_configs:
       - targets: ['crediya-postgres-solicitudes:5432']
     scrape_interval: 30s
 
-  # LocalStack (AWS Services) - usando servicio existente
+  # LocalStack (AWS Services)
   - job_name: 'localstack'
     static_configs:
       - targets: ['crediya-localstack:4566']

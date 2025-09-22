@@ -1,6 +1,6 @@
 groups:
 # ========================================
-# CREDIYA HU10 - ALERTAS COMPLETAS
+# CREDIYA - ALERTAS COMPLETAS
 # ========================================
 
 - name: crediya_critical_alerts
